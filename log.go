@@ -7,7 +7,6 @@ import (
 	"io"
 	"log/slog"
 	"os"
-	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
@@ -174,15 +173,15 @@ func getLevelColor(level slog.Level) string {
 func getLevelText(level slog.Level) string {
 	switch level {
 	case LevelTrace:
-		return "TRCE"
+		return "TRAC"
 	case LevelDebug:
-		return "DEBG"
+		return "DBG "
 	case LevelInfo:
 		return "INFO"
 	case LevelWarn:
 		return "WARN"
 	case LevelError:
-		return "ERRO"
+		return "ERR "
 	case LevelEmergency:
 		return "EMER"
 	default:
@@ -279,82 +278,6 @@ func (h *multiHandler) WithGroup(name string) slog.Handler {
 		handlers[i] = handler.WithGroup(name)
 	}
 	return &multiHandler{handlers: handlers}
-}
-
-func init() {
-	// Create colorful console handler
-	consoleHandler := newConsoleHandler(os.Stdout, &slog.HandlerOptions{
-		AddSource: true,
-		Level:     LevelDebug,
-	})
-
-	handlers := []slog.Handler{consoleHandler}
-
-	// Create file handler
-	// cacheDir := os.TempDir() // Default to temp dir
-	// if envCacheDir := os.Getenv("XDG_CACHE_HOME"); envCacheDir != "" {
-	// 	cacheDir = envCacheDir
-	// } else if homeDir, err := os.UserHomeDir(); err == nil {
-	// 	cacheDir = filepath.Join(homeDir, ".cache")
-	// }
-
-	cacheDir, err := os.UserCacheDir()
-	if err != nil {
-		cacheDir = os.TempDir() // Fallback to temp dir if UserCacheDir fails
-	}
-
-	// Get application name from args
-	appName := filepath.Base(os.Args[0])
-	if appName == "" {
-		appName = "log"
-	}
-
-	// Create log directory
-	logDir := filepath.Join(cacheDir, appName)
-	if err := os.MkdirAll(logDir, 0755); err == nil {
-		// Create log file with timestamp
-		logFileName := fmt.Sprintf("%s_%s.log", appStartTime.Format("20060102-150405"), appName)
-		logPath := filepath.Join(logDir, logFileName)
-
-		if file, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644); err == nil {
-			logFile = file
-			// ReplaceAttr for JSON to handle custom level names
-			replaceAttr := func(groups []string, a slog.Attr) slog.Attr {
-				if a.Key == slog.LevelKey {
-					level := a.Value.Any().(slog.Level)
-					switch level {
-					case LevelTrace:
-						return slog.String(slog.LevelKey, "TRACE")
-					case LevelEmergency:
-						return slog.String(slog.LevelKey, "EMER")
-					}
-				}
-				return a
-			}
-			fileHandler := slog.NewJSONHandler(logFile, &slog.HandlerOptions{
-				AddSource:   true,
-				Level:       LevelTrace,
-				ReplaceAttr: replaceAttr,
-			})
-			handlers = append(handlers, fileHandler)
-		}
-	}
-
-	// Create multi-handler
-	handler := &multiHandler{handlers: handlers}
-	defaultLogger = slog.New(handler)
-
-	// Set log as the default slog logger
-	slog.SetDefault(defaultLogger)
-}
-
-func SetDefault(l *slog.Logger) {
-	defaultLogger = l
-	slog.SetDefault(l)
-}
-
-func Default() *slog.Logger {
-	return defaultLogger
 }
 
 func With(args ...any) *slog.Logger {
@@ -571,3 +494,13 @@ var (
 	Uint64        = slog.Uint64
 	Uint64Value   = slog.Uint64Value
 )
+
+// Close gracefully shuts down all handlers
+func Close() error {
+	// Close log file if open
+	if logFile != nil {
+		return logFile.Close()
+	}
+	
+	return nil
+}

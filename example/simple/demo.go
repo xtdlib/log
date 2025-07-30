@@ -2,6 +2,7 @@ package main
 
 import (
 	"log/slog"
+	"time"
 
 	"github.com/xtdlib/log"
 )
@@ -11,4 +12,5 @@ func main() {
 	log.Info("hello info", "version", "1.0.0")
 	slog.Debug("hello debug", "version", "1.0.0")
 	log.Trace("hello trace", "version", "1.0.0")
+	time.Sleep(time.Second * 5)
 }
