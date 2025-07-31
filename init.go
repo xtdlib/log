@@ -100,7 +100,7 @@ func init() {
 
 	// Set log as the default slog logger
 	slog.SetDefault(defaultLogger)
-	slog.Info(fmt.Sprintf("log: log to %v", logPath))
+	// slog.Info(fmt.Sprintf("log: log to %v", logPath))
 }
 
 func SetDefault(l *slog.Logger) {
