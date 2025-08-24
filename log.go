@@ -72,7 +72,7 @@ func (h *consoleHandler) Handle(ctx context.Context, r slog.Record) error {
 	buf := &bytes.Buffer{}
 
 	// Time in gray
-	buf.WriteString(colorGray)
+	buf.WriteString(colorWhite)
 	buf.WriteString(r.Time.Format("15:04:05.000"))
 	buf.WriteString(colorReset)
 	buf.WriteString(" ")
@@ -184,6 +184,8 @@ func getLevelText(level slog.Level) string {
 		return "ERR "
 	case LevelEmergency:
 		return "EMER"
+	case LevelFatal:
+		return "FATL"
 	default:
 		return level.String()
 	}
@@ -297,35 +299,40 @@ func TraceContext(ctx context.Context, msg string, args ...any) {
 }
 
 func Debug(msg string, args ...any) {
-	log(context.Background(), slog.LevelDebug, msg, args...)
+	log(context.Background(), LevelDebug, msg, args...)
 }
 
 func DebugContext(ctx context.Context, msg string, args ...any) {
-	log(ctx, slog.LevelDebug, msg, args...)
+	log(ctx, LevelDebug, msg, args...)
 }
 
 func Info(msg string, args ...any) {
-	log(context.Background(), slog.LevelInfo, msg, args...)
+	log(context.Background(), LevelInfo, msg, args...)
 }
 
 func InfoContext(ctx context.Context, msg string, args ...any) {
-	log(ctx, slog.LevelInfo, msg, args...)
+	log(ctx, LevelInfo, msg, args...)
 }
 
 func Warn(msg string, args ...any) {
-	log(context.Background(), slog.LevelWarn, msg, args...)
+	log(context.Background(), LevelWarn, msg, args...)
 }
 
 func WarnContext(ctx context.Context, msg string, args ...any) {
-	log(ctx, slog.LevelWarn, msg, args...)
+	log(ctx, LevelWarn, msg, args...)
 }
 
 func Error(msg string, args ...any) {
-	log(context.Background(), slog.LevelError, msg, args...)
+	log(context.Background(), LevelError, msg, args...)
+}
+
+func Fatal(msg string, args ...any) {
+	log(context.Background(), LevelFatal, msg, args...)
+	panic(fmt.Errorf(msg, args...))
 }
 
 func ErrorContext(ctx context.Context, msg string, args ...any) {
-	log(ctx, slog.LevelError, msg, args...)
+	log(ctx, LevelError, msg, args...)
 }
 
 func Emergency(msg string, args ...any) {
@@ -470,6 +477,7 @@ const (
 	LevelWarn      = slog.LevelWarn
 	LevelError     = slog.LevelError
 	LevelEmergency = slog.Level(12)
+	LevelFatal     = slog.Level(16)
 )
 
 var (
@@ -501,6 +509,6 @@ func Close() error {
 	if logFile != nil {
 		return logFile.Close()
 	}
-	
+
 	return nil
 }
