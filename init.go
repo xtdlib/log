@@ -3,38 +3,17 @@ package log
 import (
 	"fmt"
 	"log/slog"
-	"net"
-	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
-	"runtime"
 	"time"
 )
-
-var httpClient *http.Client
 
 var appName = filepath.Base(os.Args[0])
 
 func init() {
 	if appName == "" {
 		appName = "unknown"
-	}
-
-	httpClient = &http.Client{
-		Transport: &http.Transport{
-			Proxy: http.ProxyFromEnvironment,
-			DialContext: (&net.Dialer{
-				Timeout:   30 * time.Second,
-				KeepAlive: 30 * time.Second,
-				DualStack: true,
-			}).DialContext,
-			MaxIdleConns:          100,
-			IdleConnTimeout:       30 * time.Second,
-			TLSHandshakeTimeout:   10 * time.Second,
-			ExpectContinueTimeout: 1 * time.Second,
-			// ForceAttemptHTTP2:     true,
-			MaxIdleConnsPerHost: runtime.GOMAXPROCS(0) + 1,
-		},
 	}
 
 	// Create colorful console handler
@@ -51,7 +30,7 @@ func init() {
 
 	// 1. Try /var/log/{appname}/ (standard Linux location)
 	logDir = filepath.Join("/var/log", appName)
-	logFileName := fmt.Sprintf("%s.log", appStartTime.Format("20060102T150405"))
+	logFileName := fmt.Sprintf("%s.log", time.Now().Format("20060102T150405"))
 	logPath = filepath.Join(logDir, logFileName)
 
 	// Test if we can write to /var/log
@@ -69,12 +48,13 @@ func init() {
 			// ReplaceAttr for JSON to handle custom level names
 			replaceAttr := func(groups []string, a slog.Attr) slog.Attr {
 				if a.Key == slog.LevelKey {
-					level := a.Value.Any().(slog.Level)
-					switch level {
-					case LevelTrace:
-						return slog.String(slog.LevelKey, "TRACE")
-					case LevelEmergency:
-						return slog.String(slog.LevelKey, "EMER")
+					if level, ok := a.Value.Any().(slog.Level); ok {
+						switch level {
+						case LevelTrace:
+							return slog.String(slog.LevelKey, "TRACE")
+						case LevelEmergency:
+							return slog.String(slog.LevelKey, "EMER")
+						}
 					}
 				}
 				return a
@@ -90,9 +70,11 @@ func init() {
 		}
 	}
 
-	// Add Victoria Logs handler if configured
-	victoriaHandler := NewVictoriaLogsHandler(os.Getenv("VICTORIA_LOGS_ENDPOINT"))
-	handlers = append(handlers, victoriaHandler)
+	// Add journald handler if systemd-cat is available
+	if _, err := exec.LookPath("systemd-cat"); err == nil {
+		journaldHandler := NewJournaldHandler()
+		handlers = append(handlers, journaldHandler)
+	}
 
 	// Create multi-handler
 	handler := &multiHandler{handlers: handlers}

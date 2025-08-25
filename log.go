@@ -16,7 +16,6 @@ import (
 var (
 	defaultLogger *slog.Logger
 	logFile       *os.File
-	appStartTime  = time.Now()
 )
 
 // ANSI color codes
@@ -352,13 +351,17 @@ func LogAttrs(ctx context.Context, level slog.Level, msg string, attrs ...slog.A
 }
 
 func log(ctx context.Context, level slog.Level, msg string, args ...any) {
+	logWithSkip(ctx, level, msg, 4, args...)
+}
+
+func logWithSkip(ctx context.Context, level slog.Level, msg string, skip int, args ...any) {
 	if !defaultLogger.Enabled(ctx, level) {
 		return
 	}
 
 	var pc uintptr
 	var pcs [1]uintptr
-	runtime.Callers(3, pcs[:])
+	runtime.Callers(skip, pcs[:])
 	pc = pcs[0]
 
 	r := slog.NewRecord(time.Now(), level, msg, pc)
@@ -388,7 +391,7 @@ func Print(v ...any) {
 	if !defaultLogger.Enabled(context.Background(), LevelInfo) {
 		return
 	}
-	Info(fmt.Sprint(v...))
+	logWithSkip(context.Background(), LevelInfo, fmt.Sprint(v...), 3)
 }
 
 // Printf logs a message at Info level using fmt.Sprintf-style formatting
@@ -396,7 +399,7 @@ func Printf(format string, v ...any) {
 	if !defaultLogger.Enabled(context.Background(), LevelInfo) {
 		return
 	}
-	Info(fmt.Sprintf(format, v...))
+	logWithSkip(context.Background(), LevelInfo, fmt.Sprintf(format, v...), 3)
 }
 
 // Println logs a message at Info level using fmt.Sprintln-style formatting
@@ -404,7 +407,12 @@ func Println(v ...any) {
 	if !defaultLogger.Enabled(context.Background(), LevelInfo) {
 		return
 	}
-	Info(fmt.Sprintln(v...))
+	msg := fmt.Sprintln(v...)
+	// Remove trailing newline added by Sprintln
+	if len(msg) > 0 && msg[len(msg)-1] == '\n' {
+		msg = msg[:len(msg)-1]
+	}
+	logWithSkip(context.Background(), LevelInfo, msg, 3)
 }
 
 // Level-specific printf functions
@@ -414,7 +422,7 @@ func Tracef(format string, v ...any) {
 	if !defaultLogger.Enabled(context.Background(), LevelTrace) {
 		return
 	}
-	Trace(fmt.Sprintf(format, v...))
+	logWithSkip(context.Background(), LevelTrace, fmt.Sprintf(format, v...), 3)
 }
 
 // Debugf logs a message at Debug level using fmt.Sprintf-style formatting
@@ -422,7 +430,7 @@ func Debugf(format string, v ...any) {
 	if !defaultLogger.Enabled(context.Background(), LevelDebug) {
 		return
 	}
-	Debug(fmt.Sprintf(format, v...))
+	logWithSkip(context.Background(), LevelDebug, fmt.Sprintf(format, v...), 3)
 }
 
 // Infof logs a message at Info level using fmt.Sprintf-style formatting
@@ -430,7 +438,7 @@ func Infof(format string, v ...any) {
 	if !defaultLogger.Enabled(context.Background(), LevelInfo) {
 		return
 	}
-	Info(fmt.Sprintf(format, v...))
+	logWithSkip(context.Background(), LevelInfo, fmt.Sprintf(format, v...), 3)
 }
 
 // Warnf logs a message at Warn level using fmt.Sprintf-style formatting
@@ -438,7 +446,7 @@ func Warnf(format string, v ...any) {
 	if !defaultLogger.Enabled(context.Background(), LevelWarn) {
 		return
 	}
-	Warn(fmt.Sprintf(format, v...))
+	logWithSkip(context.Background(), LevelWarn, fmt.Sprintf(format, v...), 3)
 }
 
 // Errorf logs a message at Error level using fmt.Sprintf-style formatting
@@ -446,7 +454,7 @@ func Errorf(format string, v ...any) {
 	if !defaultLogger.Enabled(context.Background(), LevelError) {
 		return
 	}
-	Error(fmt.Sprintf(format, v...))
+	logWithSkip(context.Background(), LevelError, fmt.Sprintf(format, v...), 3)
 }
 
 // Emergencyf logs a message at Emergency level using fmt.Sprintf-style formatting
@@ -454,7 +462,7 @@ func Emergencyf(format string, v ...any) {
 	if !defaultLogger.Enabled(context.Background(), LevelEmergency) {
 		return
 	}
-	Emergency(fmt.Sprintf(format, v...))
+	logWithSkip(context.Background(), LevelEmergency, fmt.Sprintf(format, v...), 3)
 }
 
 type Handler = slog.Handler
