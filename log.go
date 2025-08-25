@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"os"
 	"runtime"
 	"strings"
 	"sync"
@@ -15,7 +14,6 @@ import (
 
 var (
 	defaultLogger *slog.Logger
-	logFile       *os.File
 )
 
 // ANSI color codes
@@ -513,10 +511,5 @@ var (
 
 // Close gracefully shuts down all handlers
 func Close() error {
-	// Close log file if open
-	if logFile != nil {
-		return logFile.Close()
-	}
-
 	return nil
 }
