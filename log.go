@@ -88,20 +88,7 @@ func (h *consoleHandler) Handle(ctx context.Context, r slog.Record) error {
 	// Message
 	buf.WriteString(r.Message)
 
-	// Attributes
-	r.Attrs(func(a slog.Attr) bool {
-		buf.WriteString(" ")
-		appendAttr(buf, a, h.group)
-		return true
-	})
-
-	// Prepended attributes
-	for _, a := range h.attrs {
-		buf.WriteString(" ")
-		appendAttr(buf, a, h.group)
-	}
-
-	// Source in cyan at the end (if enabled)
+	// Source as attribute (if enabled)
 	if h.opts.AddSource && r.PC != 0 {
 		fs := runtime.CallersFrames([]uintptr{r.PC})
 		f, _ := fs.Next()
@@ -113,9 +100,21 @@ func (h *consoleHandler) Handle(ctx context.Context, r slog.Record) error {
 			}
 		}
 		buf.WriteString(" ")
-		buf.WriteString(colorCyan)
-		buf.WriteString(fmt.Sprintf("%s:%d", file, f.Line))
-		buf.WriteString(colorReset)
+		srcAttr := slog.Attr{Key: "src", Value: slog.StringValue(fmt.Sprintf("%s:%d", file, f.Line))}
+		appendAttr(buf, srcAttr, h.group)
+	}
+
+	// Attributes
+	r.Attrs(func(a slog.Attr) bool {
+		buf.WriteString(" ")
+		appendAttr(buf, a, h.group)
+		return true
+	})
+
+	// Prepended attributes
+	for _, a := range h.attrs {
+		buf.WriteString(" ")
+		appendAttr(buf, a, h.group)
 	}
 
 	buf.WriteByte('\n')
@@ -232,6 +231,61 @@ func appendAttr(buf *bytes.Buffer, a slog.Attr, group string) {
 		buf.WriteString(fmt.Sprintf("%v", a.Value.Any()))
 	}
 	buf.WriteString(colorReset)
+}
+
+// jsonHandler wraps slog.JSONHandler to customize source output
+type jsonHandler struct {
+	inner *slog.JSONHandler
+	opts  slog.HandlerOptions
+}
+
+func newJSONHandler(w io.Writer, opts *slog.HandlerOptions) *jsonHandler {
+	if opts == nil {
+		opts = &slog.HandlerOptions{}
+	}
+	// Create inner handler without AddSource since we'll handle it ourselves
+	innerOpts := *opts
+	innerOpts.AddSource = false
+	return &jsonHandler{
+		inner: slog.NewJSONHandler(w, &innerOpts),
+		opts:  *opts,
+	}
+}
+
+func (h *jsonHandler) Enabled(ctx context.Context, level slog.Level) bool {
+	return h.inner.Enabled(ctx, level)
+}
+
+func (h *jsonHandler) Handle(ctx context.Context, r slog.Record) error {
+	// If AddSource is enabled, add source as "src" attribute
+	if h.opts.AddSource && r.PC != 0 {
+		fs := runtime.CallersFrames([]uintptr{r.PC})
+		f, _ := fs.Next()
+		file := f.File
+		// Shorten file path
+		if idx := strings.LastIndex(file, "/"); idx >= 0 {
+			if idx2 := strings.LastIndex(file[:idx], "/"); idx2 >= 0 {
+				file = file[idx2+1:]
+			}
+		}
+		// Add src attribute to the record
+		r.AddAttrs(slog.String("src", fmt.Sprintf("%s:%d", file, f.Line)))
+	}
+	return h.inner.Handle(ctx, r)
+}
+
+func (h *jsonHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	return &jsonHandler{
+		inner: h.inner.WithAttrs(attrs).(*slog.JSONHandler),
+		opts:  h.opts,
+	}
+}
+
+func (h *jsonHandler) WithGroup(name string) slog.Handler {
+	return &jsonHandler{
+		inner: h.inner.WithGroup(name).(*slog.JSONHandler),
+		opts:  h.opts,
+	}
 }
 
 // multiHandler writes to multiple handlers
@@ -378,8 +432,8 @@ func NewTextHandler(w io.Writer, opts *slog.HandlerOptions) *slog.TextHandler {
 	return slog.NewTextHandler(w, opts)
 }
 
-func NewJSONHandler(w io.Writer, opts *slog.HandlerOptions) *slog.JSONHandler {
-	return slog.NewJSONHandler(w, opts)
+func NewJSONHandler(w io.Writer, opts *slog.HandlerOptions) slog.Handler {
+	return newJSONHandler(w, opts)
 }
 
 // Printf-style logging functions
@@ -471,7 +525,7 @@ type LogValuer = slog.LogValuer
 type Record = slog.Record
 type Source = slog.Source
 type TextHandler = slog.TextHandler
-type JSONHandler = slog.JSONHandler
+type JSONHandler = jsonHandler
 type Attr = slog.Attr
 type Value = slog.Value
 type Kind = slog.Kind

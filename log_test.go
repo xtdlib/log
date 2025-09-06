@@ -79,24 +79,17 @@ func TestAddSource(t *testing.T) {
 		t.Fatalf("failed to unmarshal log entry: %v", err)
 	}
 
-	source, ok := logEntry["source"].(map[string]interface{})
+	src, ok := logEntry["src"].(string)
 	if !ok {
-		t.Fatal("expected source field in log entry")
+		t.Fatal("expected src field in log entry")
 	}
 
-	if source["function"] == nil {
-		t.Error("expected function field in source")
+	if !strings.Contains(src, "log_test.go") {
+		t.Errorf("expected src to contain log_test.go, got %v", src)
 	}
-	if source["file"] == nil {
-		t.Error("expected file field in source")
-	}
-	if source["line"] == nil {
-		t.Error("expected line field in source")
-	}
-
-	file, _ := source["file"].(string)
-	if !strings.Contains(file, "log_test.go") {
-		t.Errorf("expected source file to contain 'log_test.go', got: %s", file)
+	
+	if !strings.Contains(src, ":") {
+		t.Errorf("expected src to contain line number after colon, got %v", src)
 	}
 }
 
@@ -198,9 +191,9 @@ func TestCompatibilityWithSlog(t *testing.T) {
 		t.Errorf("key values don't match: log=%v, slog=%v", logEntry["key"], slogEntry["key"])
 	}
 	
-	// Both should have source information
-	if _, ok := logEntry["source"]; !ok {
-		t.Error("log entry missing source field")
+	// Check source information - ours uses "src", slog uses "source"
+	if _, ok := logEntry["src"]; !ok {
+		t.Error("log entry missing src field")
 	}
 	if _, ok := slogEntry["source"]; !ok {
 		t.Error("slog entry missing source field")

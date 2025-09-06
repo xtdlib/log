@@ -25,7 +25,7 @@ func init() {
 		handlers = []slog.Handler{consoleHandler}
 	} else {
 		// Running as service/kubernetes - use JSON handler to stdout
-		jsonHandler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		jsonHandler := newJSONHandler(os.Stdout, &slog.HandlerOptions{
 			AddSource: true,
 			Level:     LevelDebug,
 		})
