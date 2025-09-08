@@ -233,7 +233,7 @@ func appendAttr(buf *bytes.Buffer, a slog.Attr, group string) {
 	buf.WriteString(colorReset)
 }
 
-// jsonHandler wraps slog.JSONHandler to customize source output
+// jsonHandler wraps slog.JSONHandler to customize source output and level names
 type jsonHandler struct {
 	inner *slog.JSONHandler
 	opts  slog.HandlerOptions
@@ -244,11 +244,53 @@ func newJSONHandler(w io.Writer, opts *slog.HandlerOptions) *jsonHandler {
 		opts = &slog.HandlerOptions{}
 	}
 	// Create inner handler without AddSource since we'll handle it ourselves
+	// Also use a custom ReplaceAttr to fix level names
 	innerOpts := *opts
 	innerOpts.AddSource = false
+	
+	// Wrap existing ReplaceAttr if any
+	originalReplace := innerOpts.ReplaceAttr
+	innerOpts.ReplaceAttr = func(groups []string, a slog.Attr) slog.Attr {
+		// First apply original replacer if exists
+		if originalReplace != nil {
+			a = originalReplace(groups, a)
+		}
+		
+		// Replace level with proper string
+		if a.Key == slog.LevelKey && len(groups) == 0 {
+			level := a.Value.Any().(slog.Level)
+			levelStr := getJSONLevelText(level)
+			return slog.String(slog.LevelKey, levelStr)
+		}
+		
+		return a
+	}
+	
 	return &jsonHandler{
 		inner: slog.NewJSONHandler(w, &innerOpts),
 		opts:  *opts,
+	}
+}
+
+func getJSONLevelText(level slog.Level) string {
+	switch level {
+	case LevelTrace:
+		return "TRACE"
+	case LevelDebug:
+		return "DEBUG"
+	case LevelInfo:
+		return "INFO"
+	case LevelWarn:
+		return "WARN"
+	case LevelError:
+		return "ERROR"
+	case LevelEmergency:
+		return "EMERGENCY"
+	case LevelFatal:
+		return "FATAL"
+	default:
+		// For any other custom levels, return the string representation
+		return level.String()
 	}
 }
 
