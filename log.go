@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -247,7 +248,7 @@ func newJSONHandler(w io.Writer, opts *slog.HandlerOptions) *jsonHandler {
 	// Also use a custom ReplaceAttr to fix level names
 	innerOpts := *opts
 	innerOpts.AddSource = false
-	
+
 	// Wrap existing ReplaceAttr if any
 	originalReplace := innerOpts.ReplaceAttr
 	innerOpts.ReplaceAttr = func(groups []string, a slog.Attr) slog.Attr {
@@ -255,17 +256,17 @@ func newJSONHandler(w io.Writer, opts *slog.HandlerOptions) *jsonHandler {
 		if originalReplace != nil {
 			a = originalReplace(groups, a)
 		}
-		
+
 		// Replace level with proper string
 		if a.Key == slog.LevelKey && len(groups) == 0 {
 			level := a.Value.Any().(slog.Level)
 			levelStr := getJSONLevelText(level)
 			return slog.String(slog.LevelKey, levelStr)
 		}
-		
+
 		return a
 	}
-	
+
 	return &jsonHandler{
 		inner: slog.NewJSONHandler(w, &innerOpts),
 		opts:  *opts,
@@ -421,7 +422,6 @@ func Error(msg string, args ...any) {
 
 func Fatal(msg string, args ...any) {
 	log(context.Background(), LevelFatal, msg, args...)
-	panic(fmt.Errorf(msg, args...))
 }
 
 func ErrorContext(ctx context.Context, msg string, args ...any) {
@@ -464,6 +464,13 @@ func logWithSkip(ctx context.Context, level slog.Level, msg string, skip int, ar
 		ctx = context.Background()
 	}
 	_ = defaultLogger.Handler().Handle(ctx, r)
+
+	if level >= LevelFatal {
+		err := syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
+		if err != nil {
+			panic(err)
+		}
+	}
 }
 
 func NewLogger(h slog.Handler) *slog.Logger {
@@ -549,6 +556,14 @@ func Errorf(format string, v ...any) {
 		return
 	}
 	logWithSkip(context.Background(), LevelError, fmt.Sprintf(format, v...), 3)
+}
+
+// Errorf logs a message at Error level using fmt.Sprintf-style formatting
+func Fatalf(format string, v ...any) {
+	if !defaultLogger.Enabled(context.Background(), LevelError) {
+		return
+	}
+	logWithSkip(context.Background(), LevelFatal, fmt.Sprintf(format, v...), 3)
 }
 
 // Emergencyf logs a message at Emergency level using fmt.Sprintf-style formatting
