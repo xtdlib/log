@@ -1,11 +1,15 @@
 package main
 
-import "github.com/xtdlib/log"
+import (
+	"log/slog"
+
+	"github.com/xtdlib/log"
+)
 
 func main() {
-	log.Fatalf("hello")
-
 	log.Println("hello")
+	slog.Error("hello")
+	log.Fatalf("hello")
 	log.Fatalf("")
 
 	// err := fmt.Errorf("this is an error")

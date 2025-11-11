@@ -16,7 +16,8 @@ func init() {
 	var handlers []slog.Handler
 
 	// Check if we're running in a TTY (console) or not (like systemd service/kubernetes)
-	if isInteractive() {
+	// if isInteractive() {
+	if true {
 		// Running in console - use colorful console handler
 		consoleHandler := newConsoleHandler(os.Stdout, &slog.HandlerOptions{
 			AddSource: true,
