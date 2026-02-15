@@ -15,6 +15,7 @@ import (
 
 var (
 	defaultLogger *slog.Logger
+	_ctx = context.Background()
 )
 
 // ANSI color codes
