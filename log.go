@@ -15,17 +15,34 @@ import (
 var _default phuslog.Logger
 var _defaultOutput io.Writer = os.Stdout
 
+// slog-rs
+// https://github.com/slog-rs/slog/blob/1adf6422ca472ce29b1e48c99142eca2f3193d39/src/lib.rs#L2199
+//     ["OFF", "CRIT", "ERRO", "WARN", "INFO", "DEBG", "TRCE"];
+
+// ● Fetch(https://raw.githubusercontent.com/golang/glog/master/internal/logsink/logsink.go)
+//   ⎿  Received 11.9KB (200 OK)
+//
+// ● logsink.go line 213-214에서 확인됩니다:
+//
+//   const severityChar = "IWEF"
+//   buf.WriteByte(severityChar[m.Severity])
+//
+//   로그 헤더를 조립할 때 I, W, E, F 한 글자를 prefix로 씁니다. 실제 glog 출력이 이렇게 생겼습니다:
+//
+//   I0314 10:22:05.123456 12345 main.go:42] hello world
+//   W0314 10:22:05.123457 12345 main.go:43] something bad
+
 func init() {
 	phuslog.TimeKey = "ts"
 	phuslog.CallerKey = "src"
 	phuslog.CallerFuncKey = "func"
 	phuslog.MessageKey = "msg"
 	phuslog.LevelString = [8]string{
-		phuslog.TraceLevel: "TRACE",
-		phuslog.DebugLevel: "DEBUG",
+		phuslog.TraceLevel: "TRAC",
+		phuslog.DebugLevel: "DEBG",
 		phuslog.InfoLevel:  "INFO",
 		phuslog.WarnLevel:  "NOTI",
-		phuslog.ErrorLevel: "ERROR",
+		phuslog.ErrorLevel: "ERRO",
 		phuslog.FatalLevel: "FATAL",
 		phuslog.PanicLevel: "PANIC",
 	}
@@ -55,27 +72,28 @@ var Println = stdlog.Println
 var Printf = _default.Printf
 
 func Trace() (e *phuslog.Entry) {
-	return _default.WithLevel(1)
+	return _default.Log().Str("level", "TRAC")
 }
 
 func Debug() (e *phuslog.Entry) {
-	return _default.WithLevel(2)
+	return _default.Log().Str("level", "DEBG")
 }
 
 func Info() (e *phuslog.Entry) {
-	return _default.WithLevel(3)
+	return _default.Log().Str("level", "INFO")
 }
 
 func Notice() (e *phuslog.Entry) {
-	return _default.WithLevel(4).Caller(2)
+	return _default.Log().Str("level", "NOTI").Caller(2)
 }
 
+// ["OFF", "CRIT", "ERRO", "WARN", "INFO", "DEBG", "TRCE"];
 func Error() (e *phuslog.Entry) {
-	return _default.WithLevel(5).Caller(2)
+	return _default.Log().Str("level", "ERRO").Caller(2)
 }
 
-func Emerg() (e *phuslog.Entry) {
-	return _default.Log().Str("level", "EMERG").Caller(2)
+func Critical() (e *phuslog.Entry) {
+	return _default.Log().Str("level", "CRIT").Caller(2)
 }
 
 func Print(args ...any) {
