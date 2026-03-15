@@ -48,7 +48,7 @@ func init() {
 	}
 
 	var writer phuslog.Writer
-	switch os.Getenv("LOG_FMT") {
+	switch os.Getenv("LOG_FORMAT") {
 	case "json":
 		writer = phuslog.IOWriter{Writer: _defaultOutput}
 	default:
