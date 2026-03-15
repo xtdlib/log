@@ -93,16 +93,32 @@ func Trace() (e *phuslog.Entry) {
 	return _default.Log().Str("level", "TRAC")
 }
 
+func Tracef(format string, args ...any) {
+	_default.Log().Str("level", "TRAC").Msgf(format, args...)
+}
+
 func Debug() (e *phuslog.Entry) {
 	return _default.Log().Str("level", "DEBG")
+}
+
+func Debugf(format string, args ...any) {
+	_default.Log().Str("level", "DEBG").Msgf(format, args...)
 }
 
 func Info() (e *phuslog.Entry) {
 	return _default.Log().Str("level", "INFO")
 }
 
+func Infof(format string, args ...any) {
+	_default.Log().Str("level", "INFO").Msgf(format, args...)
+}
+
 func Notice() (e *phuslog.Entry) {
 	return _default.Log().Str("level", "NOTI")
+}
+
+func Noticef(format string, args ...any) {
+	_default.Log().Str("level", "NOTI").Msgf(format, args...)
 }
 
 // ["OFF", "CRIT", "ERRO", "WARN", "INFO", "DEBG", "TRCE"];
@@ -110,8 +126,16 @@ func Error() (e *phuslog.Entry) {
 	return _default.Log().Str("level", "ERRO").Caller(2)
 }
 
+func Errorf(format string, args ...any) {
+	_default.Log().Str("level", "ERRO").Caller(2).Msgf(format, args...)
+}
+
 func Critical() (e *phuslog.Entry) {
 	return _default.Log().Str("level", "FATL").Caller(2)
+}
+
+func Criticalf(format string, args ...any) {
+	_default.Log().Str("level", "FATL").Caller(2).Msgf(format, args...)
 }
 
 func Print(args ...any) {
