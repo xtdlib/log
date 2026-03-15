@@ -2,4 +2,4 @@ module github.com/xtdlib/log
 
 go 1.25.0
 
-require github.com/phuslu/log v1.0.123-0.20260314114120-002d851c0347 // indirect
+require github.com/phuslu/log v1.0.123-0.20260315110845-7fff0a9a91d1 // indirect
