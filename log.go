@@ -47,16 +47,23 @@ func init() {
 		phuslog.PanicLevel: "PANIC",
 	}
 
+	var writer phuslog.Writer
+	switch os.Getenv("LOG_LEVEL") {
+	case "json":
+		writer = phuslog.IOWriter{Writer: _defaultOutput}
+	default:
+		writer = &phuslog.ConsoleWriter{
+			Formatter: phuslog.LogfmtFormatter{"ts"}.Formatter,
+			Writer:    io.MultiWriter(os.Stdout, os.Stderr),
+		}
+	}
+
 	_default = phuslog.Logger{
 		// TimeFormat: "01-02 15:04:05",
 		// TimeFormat: time.DateTime,
 		// TimeFormat: time.RFC3339Nano,
 		TimeFormat: phuslog.TimeFormatUnixMs,
-		// Writer:     phuslog.IOWriter{Writer: _defaultOutput},
-		Writer: &phuslog.ConsoleWriter{
-			Formatter: phuslog.LogfmtFormatter{"ts"}.Formatter,
-			Writer:    io.MultiWriter(os.Stdout, os.Stderr),
-		},
+		Writer:     writer,
 
 		// Writer: &phuslog.ConsoleWriter{
 		// 	Writer:         os.Stdout,
