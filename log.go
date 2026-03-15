@@ -52,8 +52,19 @@ func init() {
 		// TimeFormat: time.DateTime,
 		// TimeFormat: time.RFC3339Nano,
 		TimeFormat: phuslog.TimeFormatUnixMs,
-		Writer:     phuslog.IOWriter{Writer: _defaultOutput},
-		Level:      phuslog.DebugLevel,
+		// Writer:     phuslog.IOWriter{Writer: _defaultOutput},
+		Writer: &phuslog.ConsoleWriter{
+			Formatter: phuslog.LogfmtFormatter{"ts"}.Formatter,
+			Writer:    io.MultiWriter(os.Stdout, os.Stderr),
+		},
+
+		// Writer: &phuslog.ConsoleWriter{
+		// 	Writer:         os.Stdout,
+		// 	ColorOutput:    true,
+		// 	QuoteString:    true,
+		// 	EndWithMessage: true,
+		// },
+		Level: phuslog.DebugLevel,
 		// Caller: 2,
 	}
 
@@ -84,7 +95,7 @@ func Info() (e *phuslog.Entry) {
 }
 
 func Notice() (e *phuslog.Entry) {
-	return _default.Log().Str("level", "NOTI").Caller(2)
+	return _default.Log().Str("level", "NOTI")
 }
 
 // ["OFF", "CRIT", "ERRO", "WARN", "INFO", "DEBG", "TRCE"];
@@ -93,7 +104,7 @@ func Error() (e *phuslog.Entry) {
 }
 
 func Critical() (e *phuslog.Entry) {
-	return _default.Log().Str("level", "CRIT").Caller(2)
+	return _default.Log().Str("level", "FATL").Caller(2)
 }
 
 func Print(args ...any) {
