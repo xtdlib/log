@@ -37,15 +37,24 @@ func init() {
 	phuslog.CallerKey = "src"
 	phuslog.CallerFuncKey = "func"
 	phuslog.MessageKey = "msg"
-	phuslog.LevelString = [8]string{
-		phuslog.TraceLevel: "TRAC",
-		phuslog.DebugLevel: "DEBG",
-		phuslog.InfoLevel:  "INFO",
-		phuslog.WarnLevel:  "NOTI",
-		phuslog.ErrorLevel: "ERRO",
-		phuslog.FatalLevel: "FATAL",
-		phuslog.PanicLevel: "PANIC",
-	}
+
+	phuslog.TraceLevelString = "TRAC"
+	phuslog.DebugLevelString = "DEBG"
+	phuslog.InfoLevelString = "INFO"
+	phuslog.WarnLevelString = "NOTI"
+	phuslog.ErrorLevelString = "ERRO"
+	phuslog.FatalLevelString = "FATL"
+	phuslog.PanicLevelString = "PANC"
+
+	// phuslog.LevelString = [8]string{
+	// 	phuslog.TraceLevel: "TRAC",
+	// 	phuslog.DebugLevel: "DEBG",
+	// 	phuslog.InfoLevel:  "INFO",
+	// 	phuslog.WarnLevel:  "NOTI",
+	// 	phuslog.ErrorLevel: "ERRO",
+	// 	phuslog.FatalLevel: "FATAL",
+	// 	phuslog.PanicLevel: "PANIC",
+	// }
 
 	var writer phuslog.Writer
 	switch os.Getenv("LOG_FORMAT") {
