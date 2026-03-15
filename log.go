@@ -63,7 +63,7 @@ func init() {
 	default:
 		writer = &phuslog.ConsoleWriter{
 			Formatter: phuslog.LogfmtFormatter{"ts"}.Formatter,
-			Writer:    io.MultiWriter(os.Stdout, os.Stderr),
+			Writer:    os.Stderr,
 		}
 	}
 
@@ -96,7 +96,7 @@ func WithCaller(n int) {
 }
 
 var Println = stdlog.Println
-var Printf = _default.Printf
+var Printf = Infof
 
 func Trace() (e *phuslog.Entry) {
 	return _default.Log().Str("level", "TRAC")
